@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 const DB_FILE = process.env.DB_FILE;
+const TIME_OFF_DB_FILE = process.env.TIME_OFF_DB_FILE;
+
 const OPERATIONAL_HOURS = {
   start: parseInt(process.env.OPERATIONAL_HOURS_START),
   end: parseInt(process.env.OPERATIONAL_HOURS_END),
@@ -12,6 +14,13 @@ const SLOT_DURATION = parseInt(process.env.SLOT_DURATION);
 
 const loadAppointments = () => {
   const data = fs.existsSync(DB_FILE) ? fs.readFileSync(DB_FILE) : "[]";
+  return JSON.parse(data);
+};
+
+const loadTimeOff = () => {
+  const data = fs.existsSync(TIME_OFF_DB_FILE)
+    ? fs.readFileSync(TIME_OFF_DB_FILE)
+    : "[]";
   return JSON.parse(data);
 };
 
@@ -29,7 +38,6 @@ export const getAvailableSlots = (date) => {
     hour++
   ) {
     for (let minute = 0; minute < 60; minute += SLOT_DURATION) {
-      // const startTime =
       const startTime = `${hour.toString().padStart(2, "0")}:${minute
         .toString()
         .padStart(2, "0")}`;
@@ -50,9 +58,21 @@ export const getAvailableSlots = (date) => {
 
 export const bookAppointment = (date, time) => {
   const appointments = loadAppointments();
+  const timeOff = loadTimeOff();
 
   const startTime = formatedTime(date, time);
   const endTime = calculateEndTime(startTime);
+
+  const matchedTimeOff = timeOff.find(
+    (timeOff) => new Date(timeOff.date).getTime() === new Date(date).getTime()
+  );
+
+  if (matchedTimeOff) {
+    const error = new Error(
+      `${date} is ${matchedTimeOff.timeOffType} please choose another day`
+    );
+    throw error;
+  }
 
   if (
     appointments.some(
@@ -94,6 +114,26 @@ export const cancelAppointment = (id) => {
   saveAppointments(appointments);
 
   return canceledAppointment;
+};
+
+const saveTimeOff = (timOff) => {
+  fs.writeFileSync(TIME_OFF_DB_FILE, JSON.stringify(timOff, null, 2));
+};
+
+export const setTimeOff = (date, type) => {
+  const timeOffs = loadTimeOff();
+
+  const newTimeOff = {
+    id: uuidv4(),
+    date: new Date(date),
+    timeOffType: type,
+  };
+
+  timeOffs.push(newTimeOff);
+
+  saveTimeOff(timeOffs);
+
+  return newTimeOff;
 };
 
 const calculateEndTime = (startTime) => {

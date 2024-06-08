@@ -4,6 +4,7 @@ import {
   getAvailableSlots,
   bookAppointment,
   cancelAppointment,
+  setDayOff,
 } from "./controllers/appointmentController.js";
 import dotenv from "dotenv";
 dotenv.config();
@@ -29,7 +30,15 @@ app.delete("/cancelappointment/:id", cancelAppointment);
 //   "date": "2024-04-04",
 //   "time": "10:00"
 // }
-// to calcel a booking based on id
+// to cancel a booking based on id
+
+app.post("/setdayoff", setDayOff);
+// http://localhost:3000/setdayoff
+// {
+//   "date": "2024-04-04",
+//   "type": "Public Holiday"
+// }
+// to set a public holiday
 
 app.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);
