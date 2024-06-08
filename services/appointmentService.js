@@ -1,12 +1,12 @@
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
 dotenv.config();
 const DB_FILE = process.env.DB_FILE;
 const OPERATIONAL_HOURS = {
   start: parseInt(process.env.OPERATIONAL_HOURS_START),
-  end: parseInt(process.env.OPERATIONAL_HOURS_END)
+  end: parseInt(process.env.OPERATIONAL_HOURS_END),
 };
 const SLOT_DURATION = parseInt(process.env.SLOT_DURATION);
 
@@ -32,12 +32,15 @@ export const getAvailableSlots = (date) => {
       // const startTime =
       const startTime = `${hour.toString().padStart(2, "0")}:${minute
         .toString()
-        .padStart(2, "0")}`
+        .padStart(2, "0")}`;
+
       const isBooked = appointments.some(
         (app) =>
           new Date(app.date).getTime() === new Date(date).getTime() &&
-          new Date(app.time).getTime() === new Date(startTime).getTime()
+          new Date(app.startTime).getTime() ===
+            new Date(formatedTime(date, startTime)).getTime()
       );
+
       slots.push({ date, startTime, available_slots: isBooked ? 0 : 1 });
     }
   }
@@ -51,19 +54,19 @@ export const bookAppointment = (date, time) => {
   const startTime = formatedTime(date, time);
   const endTime = calculateEndTime(startTime);
 
-	if (
-		appointments.some(
-			(app) =>
-				new Date(app.date).getTime() === new Date(date).getTime() &&
-				new Date(startTime).getTime() >= new Date(app.startTime).getTime() &&
-				new Date(startTime).getTime() <= new Date(app.endTime).getTime()
-		)
-	) {
-		const availableSlots = getAvailableSlots(date);
-		const error = new Error("Slot already booked, please book another slot");
-		error.availableSlots = availableSlots;
-		throw error;
-	}
+  if (
+    appointments.some(
+      (app) =>
+        new Date(app.date).getTime() === new Date(date).getTime() &&
+        new Date(startTime).getTime() >= new Date(app.startTime).getTime() &&
+        new Date(startTime).getTime() <= new Date(app.endTime).getTime()
+    )
+  ) {
+    const availableSlots = getAvailableSlots(date);
+    const error = new Error("Slot already booked, please book another slot");
+    error.availableSlots = availableSlots;
+    throw error;
+  }
 
   // return
 
